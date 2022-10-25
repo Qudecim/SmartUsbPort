@@ -1,12 +1,16 @@
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
+#include <EEPROM.h>
 
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+#define EEPROM_SIZE 1
+
 
 void addLog(String sValue) 
 {
@@ -36,6 +40,24 @@ class MyCallbacks: public BLECharacteristicCallbacks {
         if (sValue == "off") {
           digitalWrite(2, LOW);
           addLog("Pin 2 disabled");
+        }
+
+        if (sValue == "set") {
+
+          uint8_t PublicKeyData[1];
+
+          std::copy(sValue.begin(), sValue.end(), PublicKeyData);
+
+          uint8_t* d = PublicKeyData;
+          
+          EEPROM.write(0, *d);
+          EEPROM.commit();
+          addLog("saved");
+        }
+
+        if (sValue == "read") {
+          uint8_t s = EEPROM.read(0);
+          addLog(String((char *)s));
         }
         
       }
