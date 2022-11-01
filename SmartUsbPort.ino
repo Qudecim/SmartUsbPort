@@ -2,12 +2,15 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 #include <EEPROM.h>
-
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/
+#include <WiFi.h>
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+#define char* ssid = "yourNetworkName";
+#define char* password =  "yourNetworkPass";
+#define uint16_t port = 8090;
+#define char * host = "192.168.1.83";
 
 #define EEPROM_SIZE 1
 
@@ -66,19 +69,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
     }
 };
 
-
-
-void setup() {
-  Serial.begin(115200);
-
-  pinMode (2, OUTPUT);
-
-  Serial.println("1- Download and install an BLE scanner app in your phone");
-  Serial.println("2- Scan for BLE devices in the app");
-  Serial.println("3- Connect to MyESP32");
-  Serial.println("4- Go to CUSTOM CHARACTERISTIC in CUSTOM SERVICE and write something");
-  Serial.println("5- See the magic =)");
-
+void initBt() {
   BLEDevice::init("MyESP32");
   BLEServer *pServer = BLEDevice::createServer();
 
@@ -99,7 +90,40 @@ void setup() {
   pAdvertising->start();
 }
 
+void initSocket() {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    addLog('Wifi connected');
+    Serial.println(WiFi.localIP());
+  } else {
+    addLog('Connect failed');
+  }
+}
+
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode (2, OUTPUT);
+
+  initBt();
+  initSocket();
+}
+
 void loop() {
-  // put your main code here, to run repeatedly:
+  
+  WiFiClient client; 
+
+  if (client.connect(host, port)) {
+    client.print("Hello from ESP32!");
+    addLog('Message sent to client');
+    client.stop();
+  }
+
   delay(2000);
 }
