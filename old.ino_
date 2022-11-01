@@ -2,17 +2,17 @@
 #include <BLEUtils.h>
 #include <BLEServer.h>
 #include <EEPROM.h>
-#include <WiFi.h>
 
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
-#define EEPROM_SIZE 32
+#define char* ssid = "yourNetworkName";
+#define char* password =  "yourNetworkPass";
+#define uint16_t port = 8090;
+#define char * host = "192.168.1.83";
 
-const char* ssid = "yourNetworkName";
-const char* password =  "yourNetworkPass";
-const uint16_t port = 8090;
-const char* host = "192.168.1.83";
+#define EEPROM_SIZE 1
+
 
 void addLog(String sValue) 
 {
@@ -45,13 +45,21 @@ class MyCallbacks: public BLECharacteristicCallbacks {
         }
 
         if (sValue == "set") {
-          setPassword(sValue);
+
+          uint8_t PublicKeyData[1];
+
+          std::copy(sValue.begin(), sValue.end(), PublicKeyData);
+
+          uint8_t* d = PublicKeyData;
+          
+          EEPROM.write(0, *d);
+          EEPROM.commit();
           addLog("saved");
         }
 
         if (sValue == "read") {
-          String s = getPassword();
-          addLog(s);
+          uint8_t s = EEPROM.read(0);
+          addLog(String((char *)s));
         }
         
       }
@@ -59,32 +67,6 @@ class MyCallbacks: public BLECharacteristicCallbacks {
       // pCharacteristic->setValue("ys:" + value);
     }
 };
-
-String getPassword() {
-  String password;
-
-  for (int i = 0; i < EEPROM_SIZE; i++) {
-      byte readValue = EEPROM.read(i);
-
-      if (readValue == 0) {
-          break;
-      }
-      password = password + char(readValue);
-  }
-
-  return password;
-}
-
-void setPassword(String password) {
-    int n = password.length();
-    char char_array[n + 1];
-    strcpy(char_array, password.c_str());
-    int addr = 0;
-    for (int i = 0; i < EEPROM_SIZE; i++) {
-        EEPROM.write(addr, char_array[i]);
-        addr += 1;
-    }
-}
 
 void initBt() {
   BLEDevice::init("MyESP32");
@@ -115,34 +97,30 @@ void initSocket() {
   }
 
   if (WiFi.status() != WL_CONNECTED) {
-    addLog("Wifi connected");
+    addLog('Wifi connected');
     Serial.println(WiFi.localIP());
   } else {
-    addLog("Connect failed");
+    addLog('Connect failed');
   }
 }
+
 
 void setup() {
   Serial.begin(115200);
 
   pinMode (2, OUTPUT);
 
-  if (!EEPROM.begin(EEPROM_SIZE)) {
-
-        delay(1000000);
-    }
-
   initBt();
   initSocket();
 }
 
 void loop() {
-
-    WiFiClient client; 
+  
+  WiFiClient client; 
 
   if (client.connect(host, port)) {
     client.print("Hello from ESP32!");
-    addLog("Message sent to client");
+    addLog('Message sent to client');
     client.stop();
   }
 
